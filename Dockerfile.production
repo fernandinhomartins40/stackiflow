@@ -41,7 +41,7 @@ WORKDIR /app
 # Copy built application
 COPY --from=build /app/apps/builder/build ./build
 COPY --from=build /app/apps/builder/package.json ./
-COPY --from=build /app/apps/builder/prisma ./prisma
+COPY --from=build /app/packages/prisma-client ./prisma-client
 COPY --from=build /app/node_modules ./node_modules
 
 # Create non-root user for security

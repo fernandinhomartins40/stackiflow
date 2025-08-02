@@ -72,10 +72,22 @@ pnpm build || error "Falha no build"
 # Create deployment package
 log "📋 Criando pacote de deploy..."
 tar -czf stacki-deploy.tar.gz \
+    --exclude='node_modules' \
+    --exclude='.git' \
+    --exclude='*.test.*' \
+    --exclude='*.stories.*' \
     apps/builder/build \
     apps/builder/package.json \
-    apps/builder/prisma \
-    packages \
+    packages/prisma-client \
+    packages/css-data \
+    packages/css-engine \
+    packages/design-system \
+    packages/react-sdk \
+    packages/sdk \
+    packages/sdk-components-react \
+    packages/fonts \
+    packages/icons \
+    packages/image \
     package.json \
     pnpm-lock.yaml \
     stacki.config.js \
