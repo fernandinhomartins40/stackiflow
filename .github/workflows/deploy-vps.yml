@@ -3,9 +3,11 @@ name: 🚀 Deploy Stacki to VPS
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
-  workflow_dispatch:
+
+# Prevent concurrent deployments
+concurrency:
+  group: deploy-stacki-vps
+  cancel-in-progress: true
 
 jobs:
   deploy:
