@@ -91,9 +91,18 @@ log "🚀 Iniciando deploy na VPS..."
 log "📁 Criando diretório de deploy..."
 ssh_exec "mkdir -p $DEPLOY_PATH"
 
+# Check for port conflicts
+log "🔍 Verificando conflitos de porta..."
+ssh_exec "echo 'Verificando portas 8000, 8001, 5433...'"
+ssh_exec "netstat -tlnp | grep -E ':(8000|8001|5433)' && echo 'AVISO: Algumas portas podem estar ocupadas' || echo 'Portas disponíveis'"
+
 # Stop existing services
 log "⏸️ Parando serviços existentes..."
 ssh_exec "cd $DEPLOY_PATH && docker-compose down || true"
+
+# Stop any conflicting services on the new ports
+log "🛑 Parando serviços conflitantes nas novas portas..."
+ssh_exec "docker stop \$(docker ps -q --filter 'publish=8000' --filter 'publish=8001' --filter 'publish=5433') 2>/dev/null || true"
 
 # Backup current version
 log "📦 Fazendo backup da versão atual..."

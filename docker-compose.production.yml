@@ -15,7 +15,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./backups:/backups
     ports:
-      - "5432:5432"
+      - "5433:5432"
     networks:
       - stacki-network
     healthcheck:
@@ -35,7 +35,7 @@ services:
       PGRST_JWT_SECRET: ${JWT_SECRET:-your-super-secure-jwt-secret-here}
       PGRST_DB_ANON_ROLE: anon
     ports:
-      - "3001:3000"
+      - "8001:3000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -78,7 +78,7 @@ services:
       BUILD_REQUIRE_SUBDOMAIN: true
       
     ports:
-      - "3000:3000"
+      - "8000:3000"
     depends_on:
       postgres:
         condition: service_healthy

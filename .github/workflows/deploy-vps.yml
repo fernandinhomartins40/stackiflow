@@ -61,9 +61,17 @@ jobs:
           mkdir -p /opt/stacki
           cd /opt/stacki
           
+          # Verificar conflitos de porta
+          echo "🔍 Verificando conflitos de porta..."
+          netstat -tlnp | grep -E ":(8000|8001|5433)" && echo "AVISO: Algumas portas podem estar ocupadas" || echo "Portas disponíveis"
+          
           # Parar serviços existentes
           echo "⏸️ Parando serviços..."
           docker-compose down || true
+          
+          # Parar serviços conflitantes nas novas portas
+          echo "🛑 Parando serviços conflitantes..."
+          docker stop $(docker ps -q --filter "publish=8000" --filter "publish=8001" --filter "publish=5433") 2>/dev/null || true
           
           # Backup da versão anterior
           if [ -d "current" ]; then
