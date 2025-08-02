@@ -93,8 +93,13 @@ ssh_exec "mkdir -p $DEPLOY_PATH"
 
 # Check for port conflicts
 log "🔍 Verificando conflitos de porta..."
-ssh_exec "echo 'Verificando portas 8000, 8001, 5433...'"
-ssh_exec "netstat -tlnp | grep -E ':(8000|8001|5433)' && echo 'AVISO: Algumas portas podem estar ocupadas' || echo 'Portas disponíveis'"
+ssh_exec "echo 'Verificando portas 3008, 3009, 5434...'"
+ssh_exec "netstat -tlnp | grep -E ':(3008|3009|5434)' && echo 'AVISO: Algumas portas podem estar ocupadas' || echo 'Portas disponíveis'"
+
+# Check for database conflicts
+log "🗄️ Verificando conflitos de banco de dados..."
+ssh_exec "docker ps --filter 'ancestor=postgres' --format 'table {{.Names}}\t{{.Ports}}' | grep -v 'PORTS' || echo 'Nenhum PostgreSQL conflitante'"
+ssh_exec "docker volume ls | grep postgres | grep -v stacki || echo 'Nenhum volume PostgreSQL conflitante'"
 
 # Stop existing services
 log "⏸️ Parando serviços existentes..."
@@ -102,7 +107,11 @@ ssh_exec "cd $DEPLOY_PATH && docker-compose down || true"
 
 # Stop any conflicting services on the new ports
 log "🛑 Parando serviços conflitantes nas novas portas..."
-ssh_exec "docker stop \$(docker ps -q --filter 'publish=8000' --filter 'publish=8001' --filter 'publish=5433') 2>/dev/null || true"
+ssh_exec "docker stop \$(docker ps -q --filter 'publish=3008' --filter 'publish=3009' --filter 'publish=5434') 2>/dev/null || true"
+
+# Clean up conflicting networks
+log "🌉 Limpando redes conflitantes..."
+ssh_exec "docker network rm stacki_network_isolated 2>/dev/null || true"
 
 # Backup current version
 log "📦 Fazendo backup da versão atual..."

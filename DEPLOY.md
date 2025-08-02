@@ -114,9 +114,9 @@ Após o deploy bem-sucedido:
 
 - **🚀 Stacki App:** https://www.stacki.com.br
 - **📊 PostgREST API:** https://www.stacki.com.br/rest/
-- **🗄️ PostgreSQL:** 31.97.85.98:5433
-- **🔧 Stacki Direct:** http://31.97.85.98:8000 (apenas para debug)
-- **🔧 PostgREST Direct:** http://31.97.85.98:8001 (apenas para debug)
+- **🗄️ PostgreSQL:** 31.97.85.98:5434
+- **🔧 Stacki Direct:** http://31.97.85.98:3008 (apenas para debug)
+- **🔧 PostgREST Direct:** http://31.97.85.98:3009 (apenas para debug)
 
 ### 🔍 Verificação DNS
 

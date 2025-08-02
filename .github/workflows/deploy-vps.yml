@@ -63,7 +63,11 @@ jobs:
           
           # Verificar conflitos de porta
           echo "🔍 Verificando conflitos de porta..."
-          netstat -tlnp | grep -E ":(8000|8001|5433)" && echo "AVISO: Algumas portas podem estar ocupadas" || echo "Portas disponíveis"
+          netstat -tlnp | grep -E ":(3008|3009|5434)" && echo "AVISO: Algumas portas podem estar ocupadas" || echo "Portas disponíveis"
+          
+          # Verificar conflitos de banco de dados
+          echo "🗄️ Verificando conflitos de banco de dados..."
+          docker ps --filter "ancestor=postgres" --format "table {{.Names}}\t{{.Ports}}" | grep -v "PORTS" || echo "Nenhum PostgreSQL conflitante"
           
           # Parar serviços existentes
           echo "⏸️ Parando serviços..."
@@ -71,7 +75,11 @@ jobs:
           
           # Parar serviços conflitantes nas novas portas
           echo "🛑 Parando serviços conflitantes..."
-          docker stop $(docker ps -q --filter "publish=8000" --filter "publish=8001" --filter "publish=5433") 2>/dev/null || true
+          docker stop $(docker ps -q --filter "publish=3008" --filter "publish=3009" --filter "publish=5434") 2>/dev/null || true
+          
+          # Limpar redes conflitantes
+          echo "🌉 Limpando redes conflitantes..."
+          docker network rm stacki_network_isolated 2>/dev/null || true
           
           # Backup da versão anterior
           if [ -d "current" ]; then

@@ -4,18 +4,20 @@ services:
   # 🗄️ PostgreSQL Database
   postgres:
     image: postgres:15-alpine
-    container_name: stacki-postgres
+    container_name: stacki-postgres-${COMPOSE_PROJECT_NAME:-stacki}
     restart: unless-stopped
+    hostname: stacki-postgres-host
+    isolation: default
     environment:
       POSTGRES_DB: stacki
       POSTGRES_USER: stacki
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-stacki_secure_password}
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./backups:/backups
+      - stacki_postgres_data:/var/lib/postgresql/data
+      - ./backups:/opt/stacki/backups
     ports:
-      - "5433:5432"
+      - "5434:5432"
     networks:
       - stacki-network
     healthcheck:
@@ -27,15 +29,17 @@ services:
   # 📊 PostgREST API
   postgrest:
     image: postgrest/postgrest:v12.0.2
-    container_name: stacki-postgrest
+    container_name: stacki-postgrest-${COMPOSE_PROJECT_NAME:-stacki}
     restart: unless-stopped
+    hostname: stacki-postgrest-host
+    isolation: default
     environment:
       PGRST_DB_URI: postgresql://stacki:${POSTGRES_PASSWORD:-stacki_secure_password}@postgres:5432/stacki
-      PGRST_OPENAPI_SERVER_PROXY_URI: http://31.97.85.98:3000
+      PGRST_OPENAPI_SERVER_PROXY_URI: http://31.97.85.98:3009
       PGRST_JWT_SECRET: ${JWT_SECRET:-your-super-secure-jwt-secret-here}
       PGRST_DB_ANON_ROLE: anon
     ports:
-      - "8001:3000"
+      - "3009:3000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -47,8 +51,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.production
-    container_name: stacki-app
+    container_name: stacki-app-${COMPOSE_PROJECT_NAME:-stacki}
     restart: unless-stopped
+    hostname: stacki-app-host
+    isolation: default
     environment:
       NODE_ENV: production
       PORT: 3000
@@ -78,7 +84,7 @@ services:
       BUILD_REQUIRE_SUBDOMAIN: true
       
     ports:
-      - "8000:3000"
+      - "3008:3000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -108,7 +114,7 @@ services:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - ./certbot/conf:/etc/letsencrypt:ro
       - ./certbot/www:/var/www/certbot:ro
-      - nginx_logs:/var/log/nginx
+      - stacki_nginx_logs:/var/log/nginx
     depends_on:
       - stacki
       - postgrest
@@ -129,15 +135,30 @@ services:
       - stacki-network
 
 volumes:
-  postgres_data:
+  stacki_postgres_data:
     driver: local
+    name: stacki_postgres_data_vol
   stacki_assets:
     driver: local
+    name: stacki_assets_vol
   stacki_uploads:
     driver: local
-  nginx_logs:
+    name: stacki_uploads_vol
+  stacki_nginx_logs:
     driver: local
+    name: stacki_nginx_logs_vol
 
 networks:
   stacki-network:
     driver: bridge
+    name: stacki_network_isolated
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1
+    driver_opts:
+      com.docker.network.bridge.name: "br-stacki"
+      com.docker.network.bridge.enable_ip_masquerade: "true"
+      com.docker.network.bridge.enable_icc: "true"
+      com.docker.network.bridge.host_binding_ipv4: "0.0.0.0"
