@@ -1,10 +1,20 @@
-<img width="1512" alt="builder-screenshot" src="https://github.com/webstudio-is/.github/blob/main/assets/builder-screenshot.png?raw=true">
-<br /><br />
+# 🚀 Stacki - Visual Website Builder
 
 <section align="center">
-  Webstudio is an Open Source Visual Development Platform for developers, designers, and cross-functional teams. You own the data, components, and infrastructure. You can use the hosted version or roll out your own.
+  <strong>Stacki</strong> é o primeiro Visual Website Builder <strong>Tailwind-native</strong> do mundo. 
+  Crie sites profissionais com código limpo HTML + Tailwind CSS + JavaScript puro.
+  Fork do Webstudio com foco em Tailwind-first development.
 </section>
-<br /><br />
+
+## ✨ Por que Stacki?
+
+- **🎨 Tailwind-Native** - Primeiro builder com Tailwind CSS nativo
+- **🧹 Código Limpo** - Export HTML+Tailwind sem vendor lock-in  
+- **🚀 Self-Hosting** - Hospede onde quiser, você controla tudo
+- **⚡ Performance** - Sites rápidos por padrão
+- **🎯 Simplicidade** - Interface focada em Tailwind utilities
+
+<br />
 
 ## Learning Resources
 

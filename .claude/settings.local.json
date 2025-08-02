@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node:*)",
+      "Bash(pnpm:*)",
+      "Bash(where pnpm)",
+      "Bash(cmd /c \"pnpm install\")",
+      "Bash(powershell.exe:*)",
+      "Bash(powershell:*)",
+      "Bash(npm install:*)",
+      "Bash(npx pnpm install:*)",
+      "Bash(mkdir:*)",
+      "Bash(chmod:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": []
+  }
+}

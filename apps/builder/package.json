@@ -1,8 +1,8 @@
 {
-  "name": "@webstudio-is/builder",
-  "version": "0.0.0",
+  "name": "@stacki/builder",
+  "version": "0.1.0",
   "private": true,
-  "description": "Webstudio Builder UI as a service",
+  "description": "Stacki - Tailwind-Native Visual Website Builder",
   "type": "module",
   "scripts": {
     "prebuild": "which remix",

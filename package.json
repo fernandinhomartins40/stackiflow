@@ -1,13 +1,13 @@
 {
   "packageManager": "pnpm@9.14.4",
-  "name": "webstudio-root",
-  "version": "0.0.0",
+  "name": "stacki-root",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
     "build": "pnpm -r --filter='!./fixtures/*' build",
     "dts": "pnpm -r dts",
-    "dev": "pnpm --filter='@webstudio-is/builder' dev",
+    "dev": "pnpm --filter='@stacki/builder' dev",
     "lint": "eslint \"**/*.{ts,tsx}\" --max-warnings 0",
     "checks": "pnpm -r test && pnpm -r typecheck && pnpm lint",
     "playwright": "pnpm -r playwright-init",

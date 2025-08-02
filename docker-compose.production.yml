@@ -1,0 +1,143 @@
+version: '3.8'
+
+services:
+  # 🗄️ PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: stacki-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: stacki
+      POSTGRES_USER: stacki
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-stacki_secure_password}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backups:/backups
+    ports:
+      - "5432:5432"
+    networks:
+      - stacki-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stacki"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 📊 PostgREST API
+  postgrest:
+    image: postgrest/postgrest:v12.0.2
+    container_name: stacki-postgrest
+    restart: unless-stopped
+    environment:
+      PGRST_DB_URI: postgresql://stacki:${POSTGRES_PASSWORD:-stacki_secure_password}@postgres:5432/stacki
+      PGRST_OPENAPI_SERVER_PROXY_URI: http://31.97.85.98:3000
+      PGRST_JWT_SECRET: ${JWT_SECRET:-your-super-secure-jwt-secret-here}
+      PGRST_DB_ANON_ROLE: anon
+    ports:
+      - "3001:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - stacki-network
+
+  # 🚀 Stacki Application
+  stacki:
+    build:
+      context: .
+      dockerfile: Dockerfile.production
+    container_name: stacki-app
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      
+      # Database
+      DATABASE_URL: postgresql://stacki:${POSTGRES_PASSWORD:-stacki_secure_password}@postgres:5432/stacki?pgbouncer=true
+      DIRECT_URL: postgresql://stacki:${POSTGRES_PASSWORD:-stacki_secure_password}@postgres:5432/stacki
+      
+      # Auth
+      AUTH_SECRET: ${AUTH_SECRET:-your-super-secure-auth-secret}
+      DEV_LOGIN: false
+      
+      # PostgREST
+      POSTGREST_URL: http://postgrest:3000
+      POSTGREST_API_KEY: ${POSTGREST_API_KEY:-your-postgrest-api-key}
+      
+      # Features
+      FEATURES: "*"
+      USER_PLAN: pro
+      
+      # Limits
+      MAX_ASSETS_PER_PROJECT: 100
+      MAX_UPLOAD_SIZE: 50
+      
+      # Build Origin
+      BUILD_ORIGIN: https://www.stacki.com.br
+      BUILD_REQUIRE_SUBDOMAIN: true
+      
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      postgrest:
+        condition: service_started
+    networks:
+      - stacki-network
+    volumes:
+      - stacki_assets:/app/assets
+      - stacki_uploads:/app/uploads
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # 🔄 Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: stacki-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      - stacki
+      - postgrest
+    networks:
+      - stacki-network
+    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
+
+  # 🔐 Let's Encrypt Certbot
+  certbot:
+    image: certbot/certbot:latest
+    container_name: stacki-certbot
+    restart: no
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+    networks:
+      - stacki-network
+
+volumes:
+  postgres_data:
+    driver: local
+  stacki_assets:
+    driver: local
+  stacki_uploads:
+    driver: local
+  nginx_logs:
+    driver: local
+
+networks:
+  stacki-network:
+    driver: bridge

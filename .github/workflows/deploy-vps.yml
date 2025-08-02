@@ -1,0 +1,133 @@
+name: 🚀 Deploy Stacki to VPS
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: 🚀 Deploy to VPS
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout código
+      uses: actions/checkout@v4
+      
+    - name: 🔧 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        
+    - name: 📦 Setup pnpm
+      uses: pnpm/action-setup@v3
+      with:
+        version: 9.14.4
+        
+    - name: 📦 Instalar dependências
+      run: pnpm install
+      
+    - name: 🏗️ Build aplicação
+      run: pnpm build
+      env:
+        NODE_ENV: production
+        
+    - name: 📋 Preparar arquivos para deploy
+      run: |
+        tar -czf stacki-build.tar.gz \
+          apps/builder/build \
+          apps/builder/package.json \
+          apps/builder/prisma \
+          packages \
+          package.json \
+          pnpm-lock.yaml \
+          stacki.config.js \
+          docker-compose.production.yml \
+          Dockerfile.production
+          
+    - name: 🚀 Deploy para VPS
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: 31.97.85.98
+        username: root
+        password: ${{ secrets.VPS_PASSWORD }}
+        port: 22
+        script: |
+          echo "🚀 Iniciando deploy do Stacki..."
+          
+          # Criar diretório se não existir
+          mkdir -p /opt/stacki
+          cd /opt/stacki
+          
+          # Parar serviços existentes
+          echo "⏸️ Parando serviços..."
+          docker-compose down || true
+          
+          # Backup da versão anterior
+          if [ -d "current" ]; then
+            echo "📦 Fazendo backup..."
+            rm -rf backup
+            mv current backup
+          fi
+          
+          # Criar novo diretório
+          mkdir -p current
+          cd current
+          
+    - name: 📤 Upload arquivos para VPS
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: 31.97.85.98
+        username: root
+        password: ${{ secrets.VPS_PASSWORD }}
+        port: 22
+        source: "stacki-build.tar.gz"
+        target: "/opt/stacki/current/"
+        
+    - name: 🔧 Configurar e iniciar aplicação
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: 31.97.85.98
+        username: root
+        password: ${{ secrets.VPS_PASSWORD }}
+        port: 22
+        script: |
+          cd /opt/stacki/current
+          
+          echo "📦 Extraindo arquivos..."
+          tar -xzf stacki-build.tar.gz
+          rm stacki-build.tar.gz
+          
+          echo "🔧 Configurando ambiente..."
+          # Copiar .env de produção se existir
+          if [ -f "/opt/stacki/.env.production" ]; then
+            cp /opt/stacki/.env.production apps/builder/.env
+          fi
+          
+          echo "🐳 Iniciando com Docker..."
+          docker-compose -f docker-compose.production.yml up -d
+          
+          echo "⏱️ Aguardando aplicação iniciar..."
+          sleep 30
+          
+          echo "🔍 Verificando status..."
+          docker-compose -f docker-compose.production.yml ps
+          
+          echo "✅ Deploy concluído!"
+          echo "🌐 Stacki disponível em: https://www.stacki.com.br"
+          echo "🔧 Para configurar SSL na primeira vez, execute:"
+          echo "cd /opt/stacki && ./setup-ssl.sh"
+          
+    - name: ✅ Notificar sucesso
+      if: success()
+      run: |
+        echo "🎉 Deploy realizado com sucesso!"
+        echo "🌐 Aplicação disponível em: https://www.stacki.com.br"
+        
+    - name: ❌ Notificar falha
+      if: failure()
+      run: |
+        echo "💥 Deploy falhou!"
+        echo "Verifique os logs para mais detalhes."
